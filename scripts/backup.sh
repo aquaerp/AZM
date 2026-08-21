@@ -14,6 +14,7 @@
 # Options (all optional, with defaults matching deploy/hostinger):
 #   --compose-file PATH     Path to the docker-compose file (default: deploy/hostinger/compose.yml)
 #   --env-file PATH         Path to the .env file passed to compose (default: deploy/hostinger/.env)
+#   --project-name NAME     Explicit Docker Compose project (recommended for staging/DR)
 #   --db-service NAME       Name of the PostgreSQL service (default: db)
 #   --media-volume NAME     Name of the Docker volume holding /app/media (default: <project>_media_data)
 #   --backup-dir PATH       Local directory to store backups (default: ./backups)
@@ -31,6 +32,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 COMPOSE_FILE="$PROJECT_ROOT/deploy/hostinger/compose.yml"
 ENV_FILE="$PROJECT_ROOT/deploy/hostinger/.env"
+PROJECT_NAME=""
 DB_SERVICE="db"
 MEDIA_VOLUME=""
 BACKUP_DIR="$PROJECT_ROOT/backups"
@@ -43,6 +45,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --compose-file) COMPOSE_FILE="$2"; shift 2 ;;
     --env-file) ENV_FILE="$2"; shift 2 ;;
+    --project-name) PROJECT_NAME="$2"; shift 2 ;;
     --db-service) DB_SERVICE="$2"; shift 2 ;;
     --media-volume) MEDIA_VOLUME="$2"; shift 2 ;;
     --backup-dir) BACKUP_DIR="$2"; shift 2 ;;
@@ -83,6 +86,9 @@ fi
 COMPOSE_FILE="$(cd "$(dirname "$COMPOSE_FILE")" && pwd)/$(basename "$COMPOSE_FILE")"
 
 COMPOSE=(docker compose -f "$COMPOSE_FILE")
+if [[ -n "$PROJECT_NAME" ]]; then
+  COMPOSE+=(-p "$PROJECT_NAME")
+fi
 if [[ -f "$ENV_FILE" ]]; then
   COMPOSE+=(--env-file "$ENV_FILE")
 fi
@@ -98,7 +104,7 @@ log "Starting backup $TIMESTAMP"
 
 # --- 1. Database dump ---------------------------------------------------
 log "Dumping PostgreSQL database via '${DB_SERVICE}' service..."
-if ! "${COMPOSE[@]}" exec -T "$DB_SERVICE" sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$DB_DUMP_FILE"; then
+if ! "${COMPOSE[@]}" exec -T "$DB_SERVICE" sh -c 'pg_dump --no-owner --no-acl -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$DB_DUMP_FILE"; then
   rm -f "$DB_DUMP_FILE"
   fail "Database dump failed."
 fi
@@ -108,8 +114,12 @@ log "Database dump written to $DB_DUMP_FILE ($(du -h "$DB_DUMP_FILE" | cut -f1))
 # --- 2. Media volume archive ---------------------------------------------
 if [[ -z "$MEDIA_VOLUME" ]]; then
   # Default Docker Compose volume naming: <project-name>_<volume-key>
-  PROJECT_NAME="$(basename "$(dirname "$COMPOSE_FILE")")"
-  MEDIA_VOLUME="${PROJECT_NAME}_media_data"
+  if [[ -n "$PROJECT_NAME" ]]; then
+    RESOLVED_PROJECT_NAME="$PROJECT_NAME"
+  else
+    RESOLVED_PROJECT_NAME="$(basename "$(dirname "$COMPOSE_FILE")")"
+  fi
+  MEDIA_VOLUME="${RESOLVED_PROJECT_NAME}_media_data"
 fi
 
 if docker volume inspect "$MEDIA_VOLUME" >/dev/null 2>&1; then
