@@ -38,11 +38,19 @@ AZM_ENV_FILE=.env.example docker compose --env-file .env.example config -q
 المخزن السحابي الحالي للمشروع هو Amazon S3 في منطقة `eu-north-1`، bucket باسم **`azm-833565098460-eu-north-1-an`**، عبر remote في `rclone` باسم **`azm-s3`**. أنشئ التكوين على الخادم:
 
 ```bash
-apt-get install -y rclone   # أو حسب توزيعة الخادم
+apt-get install -y rclone   # أو ثبّت الإصدار الرسمي الحديث
 rclone config
 ```
 
 اختر `n` (New remote) → الاسم `azm-s3` → النوع `s3` → المزود `AWS` → المنطقة `eu-north-1`. استخدم مفتاح IAM **مخصصًا للنسخ الاحتياطي فقط** ومقيدًا بالحاوية والمسار `azm/*`، ولا تستخدم مفتاح root.
+
+هذه الحاوية تستخدم AWS account-regional namespace. لأن مستخدم النسخ لا يملك
+`s3:CreateBucket` عمدًا، عطّل محاولة `rclone` الوقائية لإنشاء الحاوية الموجودة:
+
+```bash
+rclone config update azm-s3 no_check_bucket true
+chmod 600 /root/.config/rclone/rclone.conf
+```
 
 تحقق من الاتصال:
 
