@@ -104,7 +104,7 @@ log "Starting backup $TIMESTAMP"
 
 # --- 1. Database dump ---------------------------------------------------
 log "Dumping PostgreSQL database via '${DB_SERVICE}' service..."
-if ! "${COMPOSE[@]}" exec -T "$DB_SERVICE" sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$DB_DUMP_FILE"; then
+if ! "${COMPOSE[@]}" exec -T "$DB_SERVICE" sh -c 'pg_dump --no-owner --no-acl -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$DB_DUMP_FILE"; then
   rm -f "$DB_DUMP_FILE"
   fail "Database dump failed."
 fi
