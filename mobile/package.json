@@ -13,7 +13,7 @@
     "build:ios:ipa": "npx eas-cli@latest build --platform ios --profile preview"
   },
   "dependencies": {
-    "expo": "~54.0.36",
+    "expo": "~54.0.37",
     "expo-secure-store": "~15.0.8",
     "expo-status-bar": "~3.0.8",
     "react": "19.1.0",

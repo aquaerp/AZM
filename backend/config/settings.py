@@ -242,7 +242,9 @@ X_FRAME_OPTIONS = "DENY"
 if not DEBUG:
     # Caddy terminates TLS and preserves the original scheme in this header.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = True
+    # CI keeps DEBUG disabled while exercising HTTP test-client requests. The
+    # production default remains secure unless explicitly overridden.
+    SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "true").lower() == "true"
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31_536_000
