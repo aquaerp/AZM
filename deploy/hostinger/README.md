@@ -31,27 +31,34 @@ AZM_ENV_FILE=.env.example docker compose --env-file .env.example config -q
 
 ## النسخ الاحتياطي والاستعادة
 
-يوفّر المشروع سكربتين جاهزين في `scripts/backup.sh` و`scripts/restore.sh` (يعملان على أي جهاز فيه bash وDocker، بما في ذلك خادم Hostinger نفسه). تم اختبار الآلية بالكامل فعلياً (نسخ → رفع → تدمير محلي → تنزيل → استعادة → تحقق من البيانات) وتعمل بنجاح مع Backblaze B2.
+يوفّر المشروع سكربتين جاهزين في `scripts/backup.sh` و`scripts/restore.sh` (يعملان على أي جهاز فيه bash وDocker، بما في ذلك خادم Hostinger نفسه). تم اختبار دورة النسخ والاستعادة بالكامل فعلياً (نسخ → رفع → تدمير محلي → تنزيل → استعادة → تحقق من البيانات). وجهة الإنتاج الحالية هي Amazon S3.
 
 ### إعداد وجهة التخزين السحابي (مرة واحدة لكل خادم)
 
-المخزن السحابي الحالي للمشروع هو Backblaze B2، bucket باسم **`Azmcar`**، عبر remote في `rclone` باسم **`azm-backup`**. أنشئ التكوين على الخادم:
+المخزن السحابي الحالي للمشروع هو Amazon S3 في منطقة `eu-north-1`، bucket باسم **`azm-833565098460-eu-north-1-an`**، عبر remote في `rclone` باسم **`azm-s3`**. أنشئ التكوين على الخادم:
 
 ```bash
-apt-get install -y rclone   # أو حسب توزيعة الخادم
+apt-get install -y rclone   # أو ثبّت الإصدار الرسمي الحديث
 rclone config
 ```
 
-اختر `n` (New remote) → الاسم `azm-backup` → النوع `b2` → أدخل `keyID` و`applicationKey` الخاصين بمفتاح B2 **مخصص لهذا bucket فقط** (وليس Master Application Key). أنشئ هذا المفتاح من لوحة Backblaze عبر:
-`App Keys → Add a New Application Key → Bucket: Azmcar فقط → Read and Write`.
+اختر `n` (New remote) → الاسم `azm-s3` → النوع `s3` → المزود `AWS` → المنطقة `eu-north-1`. استخدم مفتاح IAM **مخصصًا للنسخ الاحتياطي فقط** ومقيدًا بالحاوية والمسار `azm/*`، ولا تستخدم مفتاح root.
+
+هذه الحاوية تستخدم AWS account-regional namespace. لأن مستخدم النسخ لا يملك
+`s3:CreateBucket` عمدًا، عطّل محاولة `rclone` الوقائية لإنشاء الحاوية الموجودة:
+
+```bash
+rclone config update azm-s3 no_check_bucket true
+chmod 600 /root/.config/rclone/rclone.conf
+```
 
 تحقق من الاتصال:
 
 ```bash
-rclone lsd azm-backup:Azmcar
+rclone lsd azm-s3:azm-833565098460-eu-north-1-an
 ```
 
-**لا تستخدم مفتاح Master Application Key في سكربت آلي على الخادم** — أي تسريب لملف `rclone.conf` أو للسكربت يمنح عندها وصولاً كاملاً لكل حساب Backblaze بدلاً من bucket واحد فقط.
+**لا تستخدم بيانات root أو مستخدم IAM واسع الصلاحيات في سكربت آلي على الخادم**. احمِ ملف `rclone.conf` بصلاحية `600`، واقصر السياسة على الحاوية والمسار المذكورين.
 
 ### نسخ احتياطي يدوي أو مجدول
 
@@ -62,14 +69,14 @@ cd /opt/azm
   --env-file deploy/hostinger/.env \
   --backup-dir /opt/azm-backups \
   --retention-days 14 \
-  --rclone-remote azm-backup:Azmcar
+  --rclone-remote azm-s3:azm-833565098460-eu-north-1-an/azm
 ```
 
 ينشئ السكربت في كل تشغيل:
 - تفريغاً مضغوطاً لقاعدة البيانات (`azm-db-<timestamp>.sql.gz`).
 - أرشيف مضغوط لمجلد الوثائق المشفّرة (`azm-media-<timestamp>.tar.gz`).
 - ملف `sha256` للتحقق من سلامة الملفين قبل أي استعادة.
-- رفعاً إلى bucket `Azmcar` على Backblaze B2 عبر [`rclone`](https://rclone.org) طالما مُرِّر `--rclone-remote`. **لا تعتمد فقط على القرص المحلي للخادم** — النسخة يجب أن تُرفع لموقع مختلف فعلياً لتحمي من فقدان الخادم بالكامل.
+- رفعاً إلى المسار `azm/` داخل bucket `azm-833565098460-eu-north-1-an` على Amazon S3 عبر [`rclone`](https://rclone.org) طالما مُرِّر `--rclone-remote`. **لا تعتمد فقط على القرص المحلي للخادم** — النسخة يجب أن تُرفع لموقع مختلف فعلياً لتحمي من فقدان الخادم بالكامل.
 - حذف النسخ المحلية الأقدم من `--retention-days` (افتراضياً 14 يوماً).
 
 يُنشأ تفريغ PostgreSQL دون أوامر ملكية أو صلاحيات (`--no-owner --no-acl`) حتى
@@ -103,18 +110,18 @@ crontab -e
 أضف سطراً لتشغيل النسخ يومياً في الساعة 2 صباحاً بتوقيت الخادم، مع تسجيل المخرجات:
 
 ```
-0 2 * * * cd /opt/azm && ./scripts/backup.sh --compose-file deploy/hostinger/compose.yml --env-file deploy/hostinger/.env --backup-dir /opt/azm-backups --retention-days 14 --rclone-remote azm-backup:Azmcar >> /opt/azm-backups/backup.log 2>&1
+0 2 * * * cd /opt/azm && ./scripts/backup.sh --compose-file deploy/hostinger/compose.yml --env-file deploy/hostinger/.env --backup-dir /opt/azm-backups --retention-days 14 --rclone-remote azm-s3:azm-833565098460-eu-north-1-an/azm >> /opt/azm-backups/backup.log 2>&1
 ```
 
 راقب `/opt/azm-backups/backup.log` دورياً، أو أضف تنبيهاً (مثل [healthchecks.io](https://healthchecks.io)) يستدعيه السكربت عند النجاح للتأكد من عدم توقف الجدولة بصمت.
 
 ### الاستعادة (اختبرها دورياً على بيئة منفصلة قبل الاعتماد عليها)
 
-عند فقدان الخادم بالكامل، نزّل أحدث نسخة من Backblaze أولاً:
+عند فقدان الخادم بالكامل، نزّل أحدث نسخة من Amazon S3 أولاً:
 
 ```bash
 mkdir -p /opt/azm-restore && cd /opt/azm-restore
-rclone copy azm-backup:Azmcar . --include "azm-*-20260810-*"   # عدّل التاريخ/الاسم حسب النسخة المطلوبة
+rclone copy azm-s3:azm-833565098460-eu-north-1-an/azm . --include "azm-*-20260810-*"   # عدّل التاريخ/الاسم حسب النسخة المطلوبة
 sha256sum -c azm-20260810-*.sha256   # تأكد من سلامة الملفات قبل المتابعة
 ```
 
