@@ -51,7 +51,7 @@ class Api:
     def download(self, path: str, token: str):
         request = urllib.request.Request(
             f"{self.base_url}{path}",
-            headers={"Accept": "application/pdf", "Authorization": f"Bearer {token}"},
+            headers={"Accept": "*/*", "Authorization": f"Bearer {token}"},
         )
         with urllib.request.urlopen(request, context=self.context, timeout=30) as response:
             return response.headers.get_content_type(), response.read()

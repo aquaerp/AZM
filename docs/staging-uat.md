@@ -35,6 +35,10 @@ Run the integrated acceptance journey on the staging host:
 python3 scripts/uat-smoke.py --base-url https://staging.localhost:18443 --insecure
 ```
 
+If Django tests are executed inside the running API container, explicitly use the
+application user (`docker compose exec -u azm ...`). Running them as root can create
+root-owned files in the shared media volume and prevent later invoice generation.
+
 The journey creates an isolated trial workshop and verifies:
 
 1. customer, vehicle, supplier, part, service, and job-card creation;
