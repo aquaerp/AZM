@@ -1,0 +1,18 @@
+[Unit]
+Description=Azm encrypted database and media backup
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/azm
+EnvironmentFile=/opt/azm/deploy/hostinger/backup.env
+ExecStart=/opt/azm/scripts/backup.sh --compose-file /opt/azm/deploy/hostinger/compose.yml --env-file /opt/azm/deploy/hostinger/.env --backup-dir /opt/azm-backups --retention-days 14 --require-remote
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=6
+
+[Install]
+WantedBy=multi-user.target

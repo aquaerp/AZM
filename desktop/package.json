@@ -1,0 +1,30 @@
+{
+  "name": "azm-desktop",
+  "version": "1.2.1",
+  "private": true,
+  "description": "Azm workshop management desktop client",
+  "main": "main.cjs",
+  "scripts": {
+    "prepare:renderer": "node scripts/prepare-renderer.mjs",
+    "start": "npm run prepare:renderer && electron .",
+    "dist:win": "npm run prepare:renderer && electron-builder --win nsis portable",
+    "verify": "npm run prepare:renderer && electron-builder --win dir"
+  },
+  "devDependencies": {
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.azm.workshop.desktop",
+    "productName": "Azm",
+    "files": ["main.cjs", "preload.cjs", "renderer/**/*"],
+    "directories": { "output": "release" },
+    "win": { "target": ["nsis", "portable"] },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

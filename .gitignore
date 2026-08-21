@@ -1,0 +1,51 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Django
+backend/staticfiles/
+backend/media/
+backend/logs/
+
+# Environment and local tooling
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+tmp/
+backups/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/dist-*/
+mobile/.env
+desktop/node_modules/
+desktop/renderer/
+desktop/release/
+deploy/hostinger/.env
+deploy/hostinger/backup.env
+
+# Operating systems and local caches
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# Editors
+.vscode/
+.idea/

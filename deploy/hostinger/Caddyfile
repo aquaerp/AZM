@@ -1,0 +1,28 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$AZM_DOMAIN} {
+	encode zstd gzip
+
+	@health path /healthz/
+	handle @health {
+		reverse_proxy api:8000
+	}
+
+	@api path /api/*
+	handle @api {
+		reverse_proxy api:8000
+	}
+
+	@realtime path /ws/*
+	handle @realtime {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

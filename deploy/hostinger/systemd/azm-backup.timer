@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Azm off-site backup every day
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+RandomizedDelaySec=10m
+Unit=azm-backup.service
+
+[Install]
+WantedBy=timers.target

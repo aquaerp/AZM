@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "عزم",
+    "slug": "azm-workshop",
+    "version": "1.2.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "azm",
+    "android": {
+      "package": "com.azm.workshop",
+      "versionCode": 3
+    },
+    "ios": {
+      "bundleIdentifier": "com.azm.workshop",
+      "supportsTablet": true,
+      "buildNumber": "3"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4388ebac-af7b-425b-ba97-e29ab5632c04"
+      }
+    }
+  }
+}
