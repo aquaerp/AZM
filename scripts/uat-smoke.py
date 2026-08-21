@@ -48,6 +48,14 @@ class Api:
             raise UatFailure(f"{method} {path}: expected {expected}, got {status}: {result}")
         return result
 
+    def download(self, path: str, token: str):
+        request = urllib.request.Request(
+            f"{self.base_url}{path}",
+            headers={"Accept": "application/pdf", "Authorization": f"Bearer {token}"},
+        )
+        with urllib.request.urlopen(request, context=self.context, timeout=30) as response:
+            return response.headers.get_content_type(), response.read()
+
 
 def require(condition: bool, message: str):
     if not condition:
@@ -140,6 +148,7 @@ def run(base_url: str, insecure: bool):
         owner,
         (201,),
     )
+    job = api.request("GET", f"/api/workshop/job-cards/{job['id']}/", token=owner)
     task = api.request("POST", "/api/workforce/tasks/", {"job_card": job["id"], "employee": employee["id"], "title": "مهمة UAT", "description": "", "estimated_hours": "1.00"}, owner, (201,))
     passed("master_data_and_job", job_number=job.get("job_number"))
 
@@ -186,6 +195,8 @@ def run(base_url: str, insecure: bool):
     require(Decimal(payment["amount"]) == Decimal(invoice["total"]), "Full payment amount differs from invoice total")
     paid_invoice = api.request("GET", f"/api/accounting/invoices/{invoice['id']}/", token=accountant)
     require(paid_invoice["status"] == "paid" and paid_invoice["pdf_url"], "Full payment did not mark paid and generate a PDF")
+    pdf_type, pdf_body = api.download(f"/api/accounting/invoices/{invoice['id']}/download-pdf/", accountant)
+    require(pdf_type == "application/pdf" and pdf_body.startswith(b"%PDF"), "Authenticated PDF download did not return a PDF file")
     passed("accountant_full_payment_and_pdf", invoice_number=paid_invoice["invoice_number"])
 
     today = date.today()

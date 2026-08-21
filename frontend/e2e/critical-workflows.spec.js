@@ -47,6 +47,33 @@ test('يصحح المحاسب قيمة بند في فاتورة مسودة', asy
   expect(state.requests.some(({ method, path, payload }) => method === 'PATCH' && path === '/accounting/invoice-lines/11/' && payload.unit_price === '175.50')).toBeTruthy()
 })
 
+test('ينشئ المحاسب ملف PDF وينزله عبر جلسة محمية', async ({ page }) => {
+  const state = await installMockApi(page, {
+    role: 'accountant',
+    invoices: [{
+      id: 8,
+      invoice_number: 'INV-000008',
+      customer_name: 'عميل PDF',
+      vehicle_label: 'PDF 2026',
+      status: 'paid',
+      status_label: 'مدفوعة',
+      total: '115.00',
+      amount_paid: '115.00',
+      lines: [],
+    }],
+  })
+  await login(page)
+
+  await page.getByRole('button', { name: 'المحاسبة' }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'PDF', exact: true }).click()
+  const download = await downloadPromise
+
+  expect(download.suggestedFilename()).toBe('INV-000008.pdf')
+  await expect(page.getByRole('status')).toContainText('تم توليد وتنزيل ملف PDF')
+  expect(state.requests.some(({ method, path }) => method === 'GET' && path === '/accounting/invoices/8/download-pdf/')).toBeTruthy()
+})
+
 test('تسلم الورشة البطاقة الجاهزة وتغلقها للعميل', async ({ page }) => {
   const state = await installMockApi(page, {
     jobs: [{

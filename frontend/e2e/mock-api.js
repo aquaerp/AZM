@@ -155,6 +155,14 @@ export async function installMockApi(page, options = {}) {
       }
       return json(route, { id: 1, invoice: invoiceId, ...payload }, 201)
     }
+    if (method === 'POST' && /^\/accounting\/invoices\/\d+\/generate_pdf\/$/.test(path)) {
+      const invoiceId = Number(path.match(/\d+/)[0])
+      const invoice = state.invoices.find((item) => item.id === invoiceId)
+      return json(route, { ...invoice, pdf_url: `/media/invoices/${invoice?.invoice_number}.pdf` })
+    }
+    if (method === 'GET' && /^\/accounting\/invoices\/\d+\/download-pdf\/$/.test(path)) {
+      return route.fulfill({ status: 200, contentType: 'application/pdf', body: '%PDF-1.4 UAT' })
+    }
     if (method === 'PATCH' && /^\/accounting\/invoice-lines\/\d+\/$/.test(path)) {
       const lineId = Number(path.match(/\d+/)[0])
       let updatedLine

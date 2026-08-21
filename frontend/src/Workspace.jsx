@@ -257,9 +257,17 @@ function Workspace({ user, onLogout, language, onLanguageChange }) {
     setError('')
     try {
       const { data } = await api.post(`/accounting/invoices/${invoiceId}/generate_pdf/`)
+      const pdf = await api.get(`/accounting/invoices/${invoiceId}/download-pdf/`, { responseType: 'blob' })
+      const objectUrl = URL.createObjectURL(pdf.data)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = `${data.invoice_number}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(objectUrl)
       await refresh()
-      if (data.pdf_url) window.open(data.pdf_url, '_blank', 'noopener,noreferrer')
-      setNotice('تم توليد ملف PDF للفاتورة.')
+      setNotice('تم توليد وتنزيل ملف PDF للفاتورة.')
     } catch (requestError) {
       setError(getError(requestError, 'تعذر توليد ملف الفاتورة.'))
     }
