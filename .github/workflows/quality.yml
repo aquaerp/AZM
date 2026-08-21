@@ -81,6 +81,8 @@ jobs:
       - working-directory: backend
         run: python manage.py makemigrations --check --dry-run
       - working-directory: backend
+        env:
+          DJANGO_SECURE_SSL_REDIRECT: "false"
         run: coverage run manage.py test
       - working-directory: backend
         run: coverage report --fail-under=90
