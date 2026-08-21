@@ -270,6 +270,22 @@ class AccountingApiTests(APITestCase):
         invoice.refresh_from_db()
         self.assertTrue(invoice.pdf_file.name.endswith(".pdf"))
 
+    def test_generated_pdf_download_is_authenticated_and_returns_pdf(self):
+        self.client.post("/api/accounting/invoices/create-from-job/", {"job_card": self.job.id})
+        invoice = Invoice.objects.get(job_card=self.job)
+        self.client.post(f"/api/accounting/invoices/{invoice.id}/generate_pdf/")
+
+        response = self.client.get(f"/api/accounting/invoices/{invoice.id}/download-pdf/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn(f'filename="{invoice.invoice_number}.pdf"', response["Content-Disposition"])
+        self.assertTrue(b"".join(response.streaming_content).startswith(b"%PDF"))
+
+        self.client.force_authenticate(user=None)
+        unauthorized = self.client.get(f"/api/accounting/invoices/{invoice.id}/download-pdf/")
+        self.assertEqual(unauthorized.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_pdf_for_legacy_paid_invoice_sets_missing_issue_date(self):
         self.client.post("/api/accounting/invoices/create-from-job/", {"job_card": self.job.id})
         invoice = Invoice.objects.get(job_card=self.job)

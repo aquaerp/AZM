@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.db import transaction
+from django.http import FileResponse
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -65,6 +66,18 @@ class InvoiceViewSet(WorkshopAccountingQuerysetMixin, viewsets.ModelViewSet):
         generate_invoice_pdf(invoice, language=language)
         record_audit(request, "accounting.invoice_issued", invoice, after={"invoice_number": invoice.invoice_number, "status": invoice.status, "total": invoice.total})
         return Response(self.get_serializer(invoice).data)
+
+    @action(detail=True, methods=("get",), url_path="download-pdf")
+    def download_pdf(self, request, *args, **kwargs):
+        invoice = self.get_object()
+        if not invoice.pdf_file:
+            raise ValidationError("أنشئ ملف PDF للفاتورة أولاً.")
+        return FileResponse(
+            invoice.pdf_file.open("rb"),
+            as_attachment=True,
+            filename=f"{invoice.invoice_number}.pdf",
+            content_type="application/pdf",
+        )
 
     @action(detail=True, methods=("post",), url_path="record-payment")
     def record_payment(self, request, *args, **kwargs):
