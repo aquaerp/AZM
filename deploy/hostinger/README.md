@@ -123,8 +123,14 @@ cd /opt/azm
   --compose-file deploy/hostinger/compose.yml \
   --env-file deploy/hostinger/.env \
   --db-dump /opt/azm-restore/azm-db-20260810-020000.sql.gz \
-  --media-archive /opt/azm-restore/azm-media-20260810-020000.tar.gz
+  --media-archive /opt/azm-restore/azm-media-20260810-020000.tar.gz \
+  --checksum-file /opt/azm-restore/azm-20260810-020000.sha256
 ```
+
+عند اختبار الاستعادة باستخدام ملف Compose نفسه وبيئة معزولة، مرّر اسم المشروع
+صراحةً مثل `--project-name azm-staging`. يمنع ذلك استنتاج اسم مشروع الإنتاج من
+مسار ملف Compose واستهداف حجومه بالخطأ. يرفض التحقق المدمج بدء الاستعادة إذا لم
+تطابق الملفات ملف `sha256` الممرر.
 
 **تحذير**: هذا الأمر يحذف قاعدة البيانات الحالية بالكامل ويستبدل محتوى مجلد الوثائق. يطلب تأكيداً تفاعلياً (`Type 'yes' to continue`) ما لم يُمرَّر `--yes`. لا تُشغّله على الإنتاج دون التأكد أولاً من صحة النسخة عبر ملف `sha256` المرافق وتجربتها على بيئة اختبار منفصلة أولاً.
 
