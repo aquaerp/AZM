@@ -111,8 +111,8 @@ services:
       AZM_DOMAIN: ${AZM_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL}
     ports:
-      - "80:80"
-      - "443:443"
+      - "${AZM_HTTP_BIND:-0.0.0.0:80}:80"
+      - "${AZM_HTTPS_BIND:-0.0.0.0:443}:443"
     volumes:
       - caddy_data:/data
       - caddy_config:/config
