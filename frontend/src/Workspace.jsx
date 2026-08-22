@@ -364,7 +364,7 @@ function Workspace({ user, onLogout, language, onLanguageChange }) {
   if (canUseInventory) navItems.push(['inventory', user.role === 'technician' ? 'طلبات قطع الغيار' : 'المخزون'])
   if (isManager) navItems.push(['employees', 'الموظفون'])
   if (isFinancial) navItems.push(['commissions', 'العمولات'], ['accounting', 'المحاسبة'], ['pos', 'نقطة البيع'])
-  if (isManager) navItems.push(['documents', 'الوثائق'], ['team', 'الحسابات'])
+  if (isManager) navItems.push(['documents', 'الوثائق'], ['team', 'فريق العمل'])
   navItems.push(['support', 'حول عزم والدعم'])
 
   if (isOwner) navItems.splice(navItems.length - 1, 0, ['workshop-settings', 'إعدادات الورشة'])

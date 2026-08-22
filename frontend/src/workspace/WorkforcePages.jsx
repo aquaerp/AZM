@@ -23,7 +23,7 @@ export function EmployeesPage({ employees, team, employee, setEmployee, onSubmit
   const pagination = usePagination(employees, pageSize)
 
   return <>
-    <section className="dashboard-intro"><div><h2>ملفات الموظفين</h2><p>أضف بيانات الفني ونسبة عمولته بعد إنشاء حسابه من شاشة الحسابات.</p></div></section>
+    <section className="dashboard-intro"><div><h2>ملفات الموظفين</h2><p>أضف بيانات الفني ونسبة عمولته بعد إنشاء حسابه من شاشة فريق العمل.</p></div></section>
     <section className="form-card"><form className="entry-form" onSubmit={onSubmit}><label>حساب الفني<select required value={employee.user} onChange={(e) => setEmployee({ ...employee, user: e.target.value })}><option value="">اختر حساب الفني</option>{availableTechnicians.map((item) => <option key={item.id} value={item.id}>{item.first_name || item.username} {item.last_name}</option>)}</select></label><label>المسمى الوظيفي<input required value={employee.job_title} onChange={(e) => setEmployee({ ...employee, job_title: e.target.value })} /></label><label>تاريخ التوظيف<input required type="date" value={employee.hired_at} onChange={(e) => setEmployee({ ...employee, hired_at: e.target.value })} /></label><label>نسبة العمولة %<input required type="number" min="0" max="100" step="0.01" value={employee.commission_rate} onChange={(e) => setEmployee({ ...employee, commission_rate: e.target.value })} /></label><label className="wide">ملاحظات<textarea value={employee.notes} onChange={(e) => setEmployee({ ...employee, notes: e.target.value })} /></label><button className="primary">إنشاء ملف الموظف</button></form></section>
     <section className="recent-jobs">
       <div className="section-heading"><h2>الموظفون</h2><span>{employees.length} موظف</span></div>
