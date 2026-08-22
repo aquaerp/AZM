@@ -1,0 +1,1 @@
+export const emptyWorkshopProfile = { name: '', legal_name: '', tax_number: '', commercial_registration: '', phone: '', email: '', website: '', city: '', district: '', street: '', building_number: '', postal_code: '', additional_number: '', national_address: '', latitude: '', longitude: '', auto_deliver_paid_ready_jobs: false, logo_url: '' }

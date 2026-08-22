@@ -5,7 +5,11 @@ import { emptyExpense, emptyVoucher } from './workspace/AccountingDefaults.js'
 import AccountingPage from './workspace/AccountingPage.jsx'
 import { DashboardPage, JobsPage } from './workspace/JobPages.jsx'
 import InventoryPage from './workspace/InventoryPage.jsx'
+import DocumentsPage from './workspace/DocumentsPage.jsx'
+import PointOfSalePage from './workspace/PointOfSalePage.jsx'
 import RecordsPage from './workspace/RecordsPage.jsx'
+import { emptyWorkshopProfile } from './workspace/WorkshopSettingsDefaults.js'
+import WorkshopSettingsPage from './workspace/WorkshopSettingsPage.jsx'
 import { WorkspaceHeader, WorkspaceNavigation } from './workspace/WorkspaceChrome.jsx'
 import { CommissionsPage, EmployeesPage, TasksPage } from './workspace/WorkforcePages.jsx'
 
@@ -21,8 +25,6 @@ const emptyPartRequest = { job_card: '', part: '', quantity: '1', notes: '' }
 const today = new Date().toISOString().slice(0, 10)
 const emptyEmployee = { user: '', job_title: 'فني', hired_at: today, commission_rate: '0.00', notes: '' }
 const emptyTask = { job_card: '', employee: '', title: '', description: '', estimated_hours: '0.00' }
-const emptyWorkshopProfile = { name: '', legal_name: '', tax_number: '', commercial_registration: '', phone: '', email: '', website: '', city: '', district: '', street: '', building_number: '', postal_code: '', additional_number: '', national_address: '', latitude: '', longitude: '', auto_deliver_paid_ready_jobs: false, logo_url: '' }
-
 const getError = (error, fallback) => {
   const data = error.response?.data
   if (!data) return fallback
@@ -391,42 +393,14 @@ function Workspace({ user, onLogout, language, onLanguageChange }) {
         {isManager && view === 'employees' && <EmployeesPage employees={employees} team={team} employee={employee} setEmployee={setEmployee} onSubmit={(event) => submit(event, '/workforce/employees/', employee, () => setEmployee(emptyEmployee), 'تم إنشاء ملف الموظف.')} onDelete={(id) => remove('/workforce/employees/', id)} />}
         {isFinancial && view === 'commissions' && <CommissionsPage commissions={commissions} onGenerate={generateCommissions} />}
         {isFinancial && view === 'accounting' && <AccountingPage jobs={jobs} invoices={invoices} expenses={expenses} vouchers={vouchers} profitLoss={profitLoss} expense={expense} setExpense={setExpense} voucher={voucher} setVoucher={setVoucher} submit={submit} update={update} onCreateInvoice={createInvoice} onGeneratePdf={generateInvoicePdf} onRecordPayment={recordPayment} remove={remove} />}
-        {isFinancial && view === 'pos' && <PointOfSale invoices={invoices} onRecordPayment={recordPayment} />}
-        {isManager && view === 'documents' && <Documents documents={documents} alerts={documentAlerts} customers={customers} vehicles={vehicles} employees={employees} onUpload={uploadDocument} onDownload={downloadDocument} onAcknowledge={acknowledgeDocumentAlert} remove={remove} />}
+        {isFinancial && view === 'pos' && <PointOfSalePage invoices={invoices} onRecordPayment={recordPayment} />}
+        {isManager && view === 'documents' && <DocumentsPage documents={documents} alerts={documentAlerts} customers={customers} vehicles={vehicles} employees={employees} onUpload={uploadDocument} onDownload={downloadDocument} onAcknowledge={acknowledgeDocumentAlert} remove={remove} />}
         {isManager && view === 'team' && <RecordsPage title="الفريق" form={<form className="entry-form" onSubmit={(event) => submit(event, '/auth/team/', teamMember, () => setTeamMember(emptyTeamMember), 'تمت إضافة عضو الفريق.')}><label>الاسم الأول<input required value={teamMember.first_name} onChange={(e) => setTeamMember({ ...teamMember, first_name: e.target.value })} /></label><label>اسم العائلة<input required value={teamMember.last_name} onChange={(e) => setTeamMember({ ...teamMember, last_name: e.target.value })} /></label><label>اسم المستخدم<input required value={teamMember.username} onChange={(e) => setTeamMember({ ...teamMember, username: e.target.value })} /></label><label>كلمة المرور<input required minLength="8" type="password" value={teamMember.password} onChange={(e) => setTeamMember({ ...teamMember, password: e.target.value })} /></label><label>الدور<select value={teamMember.role} onChange={(e) => setTeamMember({ ...teamMember, role: e.target.value })}><option value="technician">فني</option><option value="accountant">محاسب</option><option value="receptionist">موظف استقبال</option><option value="storekeeper">أمين مخزن</option><option value="manager">مدير</option></select></label><button className="primary">إضافة عضو</button></form>} items={team} columns={(item) => <><strong>{item.first_name} {item.last_name}</strong><span>{item.username}</span><span>{{ manager: 'مدير', technician: 'فني', accountant: 'محاسب', receptionist: 'موظف استقبال', storekeeper: 'أمين مخزن' }[item.role] || item.role}</span></>} />}
-        {isOwner && view === 'workshop-settings' && <WorkshopSettings profile={workshopProfile} setProfile={setWorkshopProfile} logo={workshopLogo} setLogo={setWorkshopLogo} onSubmit={saveWorkshopProfile} />}
+        {isOwner && view === 'workshop-settings' && <WorkshopSettingsPage profile={workshopProfile} setProfile={setWorkshopProfile} logo={workshopLogo} setLogo={setWorkshopLogo} onSubmit={saveWorkshopProfile} />}
         {view === 'support' && <AboutSupport />}
       </>}
     </section>
   </main>
-}
-
-function WorkshopSettings({ profile, setProfile, logo, setLogo, onSubmit }) {
-  const change = (key) => (event) => setProfile({ ...profile, [key]: event.target.value })
-  return <section className="form-card workshop-settings">
-    <div className="section-heading"><div><h2>هوية وبيانات الورشة</h2><p>تظهر هذه البيانات في الفواتير الضريبية. التعديل متاح لمالك الورشة فقط.</p></div>{profile.logo_url && <img className="workshop-logo-preview" src={profile.logo_url} alt="شعار الورشة" />}</div>
-    <form className="entry-form" onSubmit={onSubmit}>
-      <label>اسم الورشة<input required value={profile.name} onChange={change('name')} /></label>
-      <label>الاسم القانوني<input required value={profile.legal_name} onChange={change('legal_name')} /></label>
-      <label>الرقم الضريبي<input required inputMode="numeric" pattern="[0-9]{15}" minLength="15" maxLength="15" value={profile.tax_number} onChange={change('tax_number')} title="يجب أن يتكون الرقم الضريبي من 15 رقماً" /></label>
-      <label>السجل التجاري<input value={profile.commercial_registration} onChange={change('commercial_registration')} /></label>
-      <label>رقم الاتصال<input required type="tel" value={profile.phone} onChange={change('phone')} /></label>
-      <label>البريد الإلكتروني<input type="email" value={profile.email} onChange={change('email')} /></label>
-      <label>الموقع الإلكتروني<input type="url" placeholder="https://" value={profile.website} onChange={change('website')} /></label>
-      <label>المدينة<input required value={profile.city} onChange={change('city')} /></label>
-      <label>الحي<input required value={profile.district} onChange={change('district')} /></label>
-      <label>الشارع<input required value={profile.street} onChange={change('street')} /></label>
-      <label>رقم المبنى<input required value={profile.building_number} onChange={change('building_number')} /></label>
-      <label>الرمز البريدي<input required inputMode="numeric" value={profile.postal_code} onChange={change('postal_code')} /></label>
-      <label>الرقم الإضافي<input value={profile.additional_number} onChange={change('additional_number')} /></label>
-      <label className="wide"><input type="checkbox" checked={Boolean(profile.auto_deliver_paid_ready_jobs)} onChange={(event) => setProfile({ ...profile, auto_deliver_paid_ready_jobs: event.target.checked })} /> تسليم البطاقة الجاهزة آليًا عند سداد الفاتورة بالكامل</label>
-      <label>خط العرض<input type="number" min="-90" max="90" step="0.000001" value={profile.latitude} onChange={change('latitude')} /></label>
-      <label>خط الطول<input type="number" min="-180" max="180" step="0.000001" value={profile.longitude} onChange={change('longitude')} /></label>
-      <label className="wide">العنوان الوطني<textarea value={profile.national_address} onChange={change('national_address')} placeholder="يمكن إضافة وصف العنوان الوطني كاملاً" /></label>
-      <label className="wide">شعار الورشة (PNG أو JPG، بحد أقصى 2MB)<input accept="image/png,image/jpeg,image/webp" type="file" onChange={(event) => setLogo(event.target.files?.[0] || null)} />{logo && <small>{logo.name}</small>}</label>
-      <button className="primary">حفظ إعدادات الورشة</button>
-    </form>
-  </section>
 }
 
 function AboutSupport() {
@@ -438,68 +412,6 @@ function AboutSupport() {
     </div>
     <section className="support-card"><div><span className="eyebrow">الدعم الفني</span><h2>نحن هنا لمساعدتك</h2><p>للمساعدة في الاستخدام أو الدعم الفني، تواصل مباشرة مع مسؤول الدعم.</p></div><div className="support-contact"><strong>طارق حسين صالح (أبو سجاد)</strong><a href="mailto:thsedahmed@gmail.com">thsedahmed@gmail.com</a><a href="mailto:thsedahmed@hotmail.com">thsedahmed@hotmail.com</a></div></section>
   </section>
-}
-
-function PointOfSale({ invoices, onRecordPayment }) {
-  const payableInvoices = invoices.filter((item) => !['paid', 'void', 'draft'].includes(item.status))
-  const [invoiceId, setInvoiceId] = useState('')
-  const [amount, setAmount] = useState('')
-  const [method, setMethod] = useState('card')
-  const [reference, setReference] = useState('')
-  const selectedInvoice = payableInvoices.find((item) => item.id === Number(invoiceId))
-  const remaining = selectedInvoice ? Math.max(0, Number(selectedInvoice.total) - Number(selectedInvoice.amount_paid)) : 0
-
-  const selectInvoice = (value) => {
-    setInvoiceId(value)
-    const invoice = payableInvoices.find((item) => item.id === Number(value))
-    setAmount(invoice ? Math.max(0, Number(invoice.total) - Number(invoice.amount_paid)).toFixed(2) : '')
-  }
-
-  const submitPayment = async (event) => {
-    event.preventDefault()
-    if (!selectedInvoice || !amount || Number(amount) <= 0 || Number(amount) > remaining) return
-    const paid = await onRecordPayment(selectedInvoice.id, amount, method, reference)
-    if (paid) {
-      setInvoiceId('')
-      setAmount('')
-      setReference('')
-    }
-  }
-
-  return <><section className="dashboard-intro"><div><h2>نقطة البيع</h2><p>سجّل سداد الفاتورة فوراً من النقد أو البطاقة أو التحويل، وسيتم تحديث رصيدها وحالتها.</p></div></section>
-    <section className="form-card"><form className="entry-form" onSubmit={submitPayment}><label>الفاتورة<select required value={invoiceId} onChange={(event) => selectInvoice(event.target.value)}><option value="">اختر الفاتورة</option>{payableInvoices.map((item) => <option value={item.id} key={item.id}>{item.invoice_number} — {item.customer_name} — المتبقي {Math.max(0, Number(item.total) - Number(item.amount_paid)).toFixed(2)} ر.س</option>)}</select></label><label>وسيلة السداد<select value={method} onChange={(event) => setMethod(event.target.value)}><option value="card">بطاقة مدى/ائتمانية</option><option value="cash">نقدي</option><option value="transfer">تحويل بنكي</option><option value="other">أخرى</option></select></label><label>المبلغ<input required type="number" min="0.01" max={remaining || undefined} step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} /></label><label>مرجع العملية (اختياري)<input value={reference} onChange={(event) => setReference(event.target.value)} placeholder="رقم العملية أو آخر أرقام البطاقة" /></label><button className="primary" disabled={!selectedInvoice || !amount}>تأكيد السداد</button></form></section>
-    {selectedInvoice && <section className="financial-grid"><article><span>إجمالي الفاتورة</span><strong>{Number(selectedInvoice.total).toFixed(2)} ر.س</strong></article><article><span>المسدد سابقاً</span><strong>{Number(selectedInvoice.amount_paid).toFixed(2)} ر.س</strong></article><article className="positive"><span>المتبقي للتحصيل</span><strong>{remaining.toFixed(2)} ر.س</strong></article></section>}
-    <section className="recent-jobs"><div className="section-heading"><h2>فواتير بانتظار السداد</h2><span>{payableInvoices.length} فاتورة</span></div>{payableInvoices.length ? <div className="record-list">{payableInvoices.map((item) => <div className="invoice-row" key={item.id}><div><strong>{item.invoice_number}</strong><small>{item.customer_name} · {item.vehicle_label}</small></div><span className="job-status">{item.status_label}</span><strong>{Math.max(0, Number(item.total) - Number(item.amount_paid)).toFixed(2)} ر.س</strong><button className="text-action" type="button" onClick={() => selectInvoice(String(item.id))}>تحصيل</button></div>)}</div> : <p className="empty-state">لا توجد فواتير جاهزة للتحصيل.</p>}</section>
-  </>
-}
-
-function Documents({ documents, alerts, customers, vehicles, employees, onUpload, onDownload, onAcknowledge, remove }) {
-  const [form, setForm] = useState({ name: '', document_type: '', expires_at: '', ownerType: '', ownerId: '' })
-  const [file, setFile] = useState(null)
-  const ownerOptions = form.ownerType === 'customer' ? customers : form.ownerType === 'vehicle' ? vehicles : employees
-  const optionLabel = (item) => {
-    if (form.ownerType === 'customer') return item.name
-    if (form.ownerType === 'vehicle') return `${item.license_plate} — ${item.make} ${item.model}`
-    return `${item.user_name} — ${item.job_title}`
-  }
-  const upload = (event) => {
-    event.preventDefault()
-    if (!file) return
-    const data = new FormData()
-    data.append('name', form.name)
-    data.append('document_type', form.document_type)
-    if (form.expires_at) data.append('expires_at', form.expires_at)
-    if (form.ownerType && form.ownerId) data.append(form.ownerType, form.ownerId)
-    data.append('file', file)
-    onUpload(data)
-    setForm({ name: '', document_type: '', expires_at: '', ownerType: '', ownerId: '' })
-    setFile(null)
-  }
-  return <><section className="dashboard-intro"><div><h2>أرشفة الوثائق</h2><p>تُخزن الملفات مشفرة، ولا تُفك إلا أثناء تنزيلها للمستخدم المصرح له.</p></div></section>
-    <section className="form-card"><form className="entry-form" onSubmit={upload}><label>اسم الوثيقة<input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label><label>نوع الوثيقة<input required placeholder="رخصة، عقد، شهادة..." value={form.document_type} onChange={(e) => setForm({ ...form, document_type: e.target.value })} /></label><label>تاريخ الانتهاء<input type="date" value={form.expires_at} onChange={(e) => setForm({ ...form, expires_at: e.target.value })} /></label><label>ربط بـ<select value={form.ownerType} onChange={(e) => setForm({ ...form, ownerType: e.target.value, ownerId: '' })}><option value="">الورشة فقط</option><option value="customer">عميل</option><option value="vehicle">مركبة</option><option value="employee">موظف</option></select></label>{form.ownerType && <label>الجهة<select required value={form.ownerId} onChange={(e) => setForm({ ...form, ownerId: e.target.value })}><option value="">اختر</option>{ownerOptions.map((item) => <option key={item.id} value={item.id}>{optionLabel(item)}</option>)}</select></label>}<label>الملف<input required type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label><button className="primary">رفع وتشفير الوثيقة</button></form></section>
-    <section className="recent-jobs"><div className="section-heading"><h2>تنبيهات انتهاء الصلاحية</h2><span>{alerts.filter((item) => !item.acknowledged_at).length} جديد</span></div>{alerts.length ? <div className="record-list">{alerts.map((item) => <div className={`record-row ${item.acknowledged_at ? '' : 'low-stock-row'}`} key={item.id}><strong>{item.document_name}</strong><span>ينتهي: {item.expires_at}</span><span>خلال {item.days_before} يوم</span>{item.acknowledged_at ? <span>تمت القراءة</span> : <button className="text-action" type="button" onClick={() => onAcknowledge(item.id)}>تأكيد</button>}</div>)}</div> : <p className="empty-state">لا توجد تنبيهات صلاحية حالياً.</p>}</section>
-    <section className="recent-jobs"><div className="section-heading"><h2>الوثائق المؤرشفة</h2><span>{documents.length} وثيقة</span></div>{documents.length ? <div className="record-list">{documents.map((item) => <div className="document-row" key={item.id}><div><strong>{item.name}</strong><small>{item.document_type} · {item.owner_label}</small></div><span>{item.expires_at || 'بلا انتهاء'}</span><span>{item.original_filename}</span><div><button className="text-action" type="button" onClick={() => onDownload(item)}>تنزيل</button><button className="delete-action" type="button" onClick={() => remove('/documents/documents/', item.id)}>حذف</button></div></div>)}</div> : <p className="empty-state">لا توجد وثائق مؤرشفة بعد.</p>}</section>
-  </>
 }
 
 export default Workspace
