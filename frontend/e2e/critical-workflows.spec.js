@@ -112,7 +112,7 @@ test('يجدد الرمز المنتهي ويواصل العمل دون إخرا
 
   await expect(page.locator('.workspace')).toBeVisible()
   await expect(page.getByRole('button', { name: 'تسجيل الخروج' })).toBeVisible()
-  expect(state.requests.some(({ method, path }) => method === 'POST' && path === '/auth/refresh/')).toBeTruthy()
+  expect(state.requests.some(({ method, path }) => method === 'POST' && path === '/auth/token/refresh/')).toBeTruthy()
   expect(state.dashboardAttempts).toBeGreaterThanOrEqual(2)
 })
 

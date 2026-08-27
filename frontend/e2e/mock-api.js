@@ -36,7 +36,7 @@ export async function installMockApi(page, options = {}) {
     state.requests.push({ method, path, payload })
 
     if (method === 'POST' && path === '/auth/login/') return json(route, { access: 'access-token', refresh: 'refresh-token' })
-    if (method === 'POST' && path === '/auth/refresh/') return json(route, { access: 'renewed-access-token', refresh: 'renewed-refresh-token' })
+    if (method === 'POST' && path === '/auth/token/refresh/') return json(route, { access: 'renewed-access-token', refresh: 'renewed-refresh-token' })
     if (method === 'GET' && path === '/auth/me/') return json(route, {
       id: 1,
       username: state.role,
