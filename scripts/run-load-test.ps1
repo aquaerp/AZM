@@ -4,6 +4,7 @@ param(
     [ValidateRange(1, 128)][int]$Workers = 8,
     [ValidateRange(1024, 65535)][int]$Port = 8001,
     [ValidatePattern('^[a-zA-Z0-9_]+$')][string]$LoadDatabase = 'azm_loadtest',
+    [switch]$ReuseDatabase,
     [switch]$FullScale
 )
 
@@ -27,14 +28,23 @@ $postgresUser = (& docker compose exec -T postgres printenv POSTGRES_USER).Trim(
 if (-not $postgresUser) { throw 'Could not determine the PostgreSQL user from the Docker service.' }
 $databaseExists = (& docker compose exec -T postgres psql -U $postgresUser -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$LoadDatabase'").Trim()
 if ($LASTEXITCODE -ne 0) { throw 'Could not inspect PostgreSQL databases.' }
+if ($databaseExists -eq '1' -and -not $ReuseDatabase) {
+    Write-Host "Recreating isolated load-test database $LoadDatabase..."
+    Invoke-Checked { & docker compose exec -T postgres dropdb -U $postgresUser --force -- $LoadDatabase }
+    $databaseExists = ''
+}
 if ($databaseExists -ne '1') {
-    Invoke-Checked { & docker compose exec -T postgres createdb -U $postgresUser $LoadDatabase }
+    Invoke-Checked { & docker compose exec -T postgres createdb -U $postgresUser -- $LoadDatabase }
 }
 
 $previousDatabase = $env:POSTGRES_DB
 $previousDebug = $env:DJANGO_DEBUG
+$previousAnonThrottleRate = $env:AZM_ANON_THROTTLE_RATE
+$previousUserThrottleRate = $env:AZM_USER_THROTTLE_RATE
 $env:POSTGRES_DB = $LoadDatabase
 $env:DJANGO_DEBUG = 'true'
+$env:AZM_ANON_THROTTLE_RATE = '1000000/hour'
+$env:AZM_USER_THROTTLE_RATE = '1000000/hour'
 Push-Location $backend
 try {
     Invoke-Checked { & $python manage.py migrate --noinput }
@@ -57,6 +67,8 @@ finally {
     Pop-Location
     $env:POSTGRES_DB = $previousDatabase
     $env:DJANGO_DEBUG = $previousDebug
+    $env:AZM_ANON_THROTTLE_RATE = $previousAnonThrottleRate
+    $env:AZM_USER_THROTTLE_RATE = $previousUserThrottleRate
 }
 
 Write-Host "Load-test summary: $summary"

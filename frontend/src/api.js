@@ -24,19 +24,20 @@ api.interceptors.request.use((config) => {
 })
 
 let refreshPromise = null
+const refreshPath = '/auth/token/refresh/'
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config
     const refreshToken = localStorage.getItem('azm_refresh_token')
-    const isAuthRequest = originalRequest?.url?.includes('/auth/login/') || originalRequest?.url?.includes('/auth/refresh/')
+    const isAuthRequest = originalRequest?.url?.includes('/auth/login/') || originalRequest?.url?.includes(refreshPath)
     if (error.response?.status !== 401 || !refreshToken || originalRequest?._azmRetried || isAuthRequest) {
       return Promise.reject(error)
     }
     originalRequest._azmRetried = true
     try {
-      refreshPromise ||= axios.post(`${api.defaults.baseURL}/auth/refresh/`, { refresh: refreshToken })
+      refreshPromise ||= axios.post(`${api.defaults.baseURL}${refreshPath}`, { refresh: refreshToken })
       const { data } = await refreshPromise
       localStorage.setItem('azm_access_token', data.access)
       if (data.refresh) localStorage.setItem('azm_refresh_token', data.refresh)
