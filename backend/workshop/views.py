@@ -13,6 +13,7 @@ from accounts.audit import model_snapshot, record_audit
 from accounts.permissions import IsManager, IsManagerOrAccountant, IsManagerOrTechnician, IsOperationalStaff, IsWorkshopReader
 
 from .models import Customer, JobCard, Service, Vehicle
+from .pagination import OptionalPageNumberPagination
 from .serializers import (
     CustomerSerializer,
     JobCardDetailSerializer,
@@ -61,6 +62,7 @@ class ManagedWorkshopViewSet(WorkshopQuerysetMixin, viewsets.ModelViewSet):
 class CustomerViewSet(ManagedWorkshopViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+    pagination_class = OptionalPageNumberPagination
     search_fields = ("name", "phone", "email")
     audit_fields = ("name", "phone", "email")
 
@@ -68,6 +70,7 @@ class CustomerViewSet(ManagedWorkshopViewSet):
 class VehicleViewSet(ManagedWorkshopViewSet):
     queryset = Vehicle.objects.select_related("customer")
     serializer_class = VehicleSerializer
+    pagination_class = OptionalPageNumberPagination
     search_fields = ("license_plate", "vin", "make", "model", "customer__name")
     audit_fields = ("customer_id", "license_plate", "make", "model", "model_year", "vin")
 
@@ -80,7 +83,8 @@ class ServiceViewSet(ManagedWorkshopViewSet):
 
 
 class JobCardViewSet(WorkshopQuerysetMixin, viewsets.ModelViewSet):
-    queryset = JobCard.objects.select_related("customer", "vehicle").prefetch_related("services", "assigned_technicians")
+    queryset = JobCard.objects.select_related("customer", "vehicle").prefetch_related("assigned_technicians")
+    pagination_class = OptionalPageNumberPagination
     search_fields = ("job_number", "customer__name", "vehicle__license_plate")
 
     def get_queryset(self):

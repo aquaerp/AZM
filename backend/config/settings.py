@@ -113,6 +113,13 @@ DATABASES = {
         "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
         "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
         "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        "OPTIONS": {
+            "pool": {
+                "min_size": int(os.environ.get("AZM_DB_POOL_MIN_SIZE", "4")),
+                "max_size": int(os.environ.get("AZM_DB_POOL_MAX_SIZE", "32")),
+                "timeout": int(os.environ.get("AZM_DB_POOL_TIMEOUT", "30")),
+            },
+        },
     }
 }
 
@@ -173,8 +180,8 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ),
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "60/hour",
-        "user": "1000/hour",
+        "anon": os.environ.get("AZM_ANON_THROTTLE_RATE", "60/hour"),
+        "user": os.environ.get("AZM_USER_THROTTLE_RATE", "1000/hour"),
     },
 }
 

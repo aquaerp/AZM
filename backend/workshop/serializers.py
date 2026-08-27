@@ -121,8 +121,10 @@ class JobCardWriteSerializer(serializers.ModelSerializer):
         technicians = validated_data.pop("assigned_technicians", [])
         request = self.context["request"]
         job_card = JobCard.objects.create(workshop=request.user.workshop, created_by=request.user, **validated_data)
-        job_card.services.set(services)
-        job_card.assigned_technicians.set(technicians)
+        if services:
+            job_card.services.set(services)
+        if technicians:
+            job_card.assigned_technicians.set(technicians)
         return job_card
 
     @transaction.atomic

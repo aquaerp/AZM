@@ -35,6 +35,15 @@ class WorkshopApiTests(APITestCase):
         self.assertEqual(event.actor, self.manager)
         self.assertEqual(event.after["name"], "سارة")
 
+    def test_customer_list_supports_optional_tenant_scoped_pagination(self):
+        Customer.objects.create(workshop=self.workshop, name="سارة", phone="0511111111")
+
+        response = self.client.get("/api/workshop/customers/?page=1&page_size=1")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 2)
+        self.assertEqual(len(response.data["results"]), 1)
+
     def test_job_card_rejects_vehicle_from_another_workshop(self):
         response = self.client.post(
             "/api/workshop/job-cards/",
