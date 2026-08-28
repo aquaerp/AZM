@@ -50,7 +50,7 @@ services:
     healthcheck:
       test: ["CMD", "python", "-c", "import os, urllib.request; request = urllib.request.Request('http://127.0.0.1:8000/healthz/', headers={'Host': os.environ['AZM_DOMAIN'], 'X-Forwarded-Proto': 'https'}); urllib.request.urlopen(request)"]
       interval: 30s
-      timeout: 5s
+      timeout: 30s
       retries: 5
       start_period: 20s
 
